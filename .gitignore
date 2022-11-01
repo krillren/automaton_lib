@@ -1,5 +1,5 @@
-/googletest
-/build
-/CMakeLists.txt
-/prepare-archive.sh
+automate/googletest
+automate/build
+automate/CMakeLists.txt
+automate/prepare-archive.sh
 

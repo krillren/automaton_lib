@@ -29,6 +29,7 @@ TEST(isValid, nothing_empty){
   fa.addState(1);
   EXPECT_TRUE(fa.isValid());
 }
+//git test
 
 int main(int argc, char **argv) {
   ::testing::InitGoogleTest(&argc, argv);
