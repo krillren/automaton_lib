@@ -5,11 +5,24 @@
 #include <iosfwd>
 #include <set>
 #include <string>
+#include <map>
+#include <vector>
+
 
 
 namespace fa {
 
   constexpr char Epsilon = '\0';
+
+  struct State{
+    int state;
+  };
+
+  struct Transition{
+    State src;
+    State dest;
+    char symbol;
+  };
 
   class Automaton {
   public:
@@ -221,6 +234,9 @@ namespace fa {
 
 
   private:
+    std::vector<struct State> states;
+    std::set<int,struct Transition> transitions;
+    
   };
 
 }
