@@ -2,4 +2,6 @@ automate/googletest
 automate/build
 automate/CMakeLists.txt
 automate/prepare-archive.sh
-
+automate/a.out
+automate/test.cp
+automate/.vscode

@@ -62,10 +62,10 @@ TEST(addSymbol, add_empty){
   EXPECT_FALSE(fa.addSymbol(' '));
   EXPECT_FALSE(fa.hasSymbol(' '));
 }
-//test addSymbol add NULL
-TEST(addSymbol, add_null){
+//test addSymbol add epsilon
+TEST(addSymbol, add_epsilon){
   fa::Automaton fa;
-  EXPECT_FALSE(fa.addSymbol(NULL));
+  EXPECT_FALSE(fa.addSymbol(fa::Epsilon));
 }
 
 /*
@@ -103,10 +103,10 @@ TEST(removeSymbol, remove_inexistent_symbol){
   fa::Automaton fa;
   EXPECT_FALSE(fa.removeSymbol('a'));
 }
-//test removeSymbol remove NULL
-TEST(removeSymbol, remove_null){
+//test removeSymbol remove epsilon
+TEST(removeSymbol, remove_epsilon){
   fa::Automaton fa;
-  EXPECT_FALSE(fa.removeSymbol(NULL));
+  EXPECT_FALSE(fa.removeSymbol(fa::Epsilon));
 }
 //test removeSymbol remove epsilon TODO
 
@@ -119,10 +119,10 @@ TEST(hasSymbol, has_one_symbol){
   fa.addSymbol('a');
   EXPECT_TRUE(fa.hasSymbol('a'));
 }
-//test hasSymbol null
-TEST(hasSymbol, has_null){
+//test hasSymbol epsilon
+TEST(hasSymbol, has_epsilon){
   fa::Automaton fa;
-  EXPECT_FALSE(fa.hasSymbol(NULL));
+  EXPECT_FALSE(fa.hasSymbol(fa::Epsilon));
 }
 //test hasSymbol has epsilon TODO
 /*
@@ -131,13 +131,13 @@ TEST(hasSymbol, has_null){
 //test countSymbols count empty alphabet
 TEST(countSymbols, empty_alphabet){
   fa::Automaton fa;
-  EXPECT_EQ(fa.countSymbols(), 0);
+  EXPECT_EQ(fa.countSymbols(), 0UL);
 }
 //test countSymbols count one symbol
 TEST(countSymbols, one_symbol){
   fa::Automaton fa;
   fa.addSymbol('a');
-  EXPECT_EQ(fa.countSymbols(), 1);
+  EXPECT_EQ(fa.countSymbols(), 1UL);
 }
 //test countSymbols count multiple symbol
 TEST(countSymbols, multiple_symbol){
@@ -145,7 +145,7 @@ TEST(countSymbols, multiple_symbol){
   fa.addSymbol('a');
   fa.addSymbol('b');
   fa.addSymbol('c');
-  EXPECT_EQ(fa.countSymbols(), 3);
+  EXPECT_EQ(fa.countSymbols(), 3UL);
 }
 /*
   test addState()
@@ -171,11 +171,6 @@ TEST(addState, add_same_state){
   fa::Automaton fa;
   fa.addState(1);
   EXPECT_FALSE(fa.addState(1));
-}
-//test addState add NULL
-TEST(addState, add_null){
-  fa::Automaton fa;
-  EXPECT_FALSE(fa.addState(NULL));
 }
 /*
   test removeState()
@@ -212,11 +207,7 @@ TEST(removeState, remove_inexistent_state){
   fa::Automaton fa;
   EXPECT_FALSE(fa.removeState(1));
 }
-//test removeState remove NULL
-TEST(removeState, remove_null){
-  fa::Automaton fa;
-  EXPECT_FALSE(fa.removeState(NULL));
-}
+
 /*
   test hasState()
 */
@@ -226,24 +217,20 @@ TEST(hasState, has_one_state){
   fa.addState(1);
   EXPECT_TRUE(fa.hasState(1));
 }
-//test hasState null
-TEST(hasState, has_null){
-  fa::Automaton fa;
-  EXPECT_FALSE(fa.hasState(NULL));
-}
+
 /*
   test countStates()
 */
 //test countStates count empty states
 TEST(countStates, empty_states){
   fa::Automaton fa;
-  EXPECT_EQ(fa.countStates(), 0);
+  EXPECT_EQ(fa.countStates(), 0UL);
 }
 //test countStates count one state
 TEST(countStates, one_state){
   fa::Automaton fa;
   fa.addState(1);
-  EXPECT_EQ(fa.countStates(), 1);
+  EXPECT_EQ(fa.countStates(), 1UL);
 }
 //test countStates count multiple state
 TEST(countStates, multiple_state){
@@ -251,7 +238,7 @@ TEST(countStates, multiple_state){
   fa.addState(1);
   fa.addState(2);
   fa.addState(3);
-  EXPECT_EQ(fa.countStates(), 3);
+  EXPECT_EQ(fa.countStates(), 3UL);
 }
 /*
   test setStateInitial() and isStateInitial()
@@ -443,7 +430,50 @@ TEST(removeTransition, remove_transition_with_inexistent_value){
   fa::Automaton fa;
   EXPECT_FALSE(fa.removeTransition(1,'a', 2));
 }
+/*
+  test hasTransition()
+*/
+//test hasTransitions has one transition
+TEST(hasTransitions, has_one_transition){
+  fa::Automaton fa;
+  fa.addState(1);
+  fa.addState(2);
+  fa.addSymbol('a');
+  fa.addTransition(1,'a', 2);
+  EXPECT_TRUE(fa.hasTransition(1,'a',2));
+}
+//test hasTransitions has multiple transition
+TEST(hasTransitions, has_multiple_transition){
+  fa::Automaton fa;
+  fa.addState(1);
+  fa.addState(2);
+  fa.addState(3);
 
+  fa.addSymbol('a');
+  fa.addSymbol('b');
+  fa.addSymbol('c');
+
+  fa.addTransition(1,'a', 2);
+  fa.addTransition(2,'b', 3);
+  fa.addTransition(3,'c', 1);
+
+  EXPECT_TRUE(fa.hasTransition(1,'a',2));
+  EXPECT_TRUE(fa.hasTransition(2,'b',3));
+  EXPECT_TRUE(fa.hasTransition(3,'c',1));
+}
+//test hasTransitions has inexistent transition
+TEST(hasTransitions, has_inexistent_transition){
+  fa::Automaton fa;
+  fa.addState(1);
+  fa.addState(2);
+  fa.addSymbol('a');
+  EXPECT_FALSE(fa.hasTransition(1,'a',2));
+}
+//test hasTransitions has transition with inexistent value
+TEST(hasTransitions, has_transition_with_inexistent_value){
+  fa::Automaton fa;
+  EXPECT_FALSE(fa.hasTransition(1,'a',2));
+}
 
 
 

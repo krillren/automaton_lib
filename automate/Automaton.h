@@ -13,18 +13,44 @@
 namespace fa {
 
   constexpr char Epsilon = '\0';
-
   struct State{
-    int state;
+    int number;
+    mutable bool final;
+    mutable bool initial;
+    bool operator<(const State& s) const{
+      return number < s.number;
+    }
+    bool operator==(const State& s) const{
+      return number == s.number;
+    }
+    
   };
 
   struct Transition{
-    State src;
-    State dest;
+    int src;
+    int dest;
     char symbol;
+
+    bool operator<(const Transition& t) const {
+      return src < t.src;
+    }
+  
+    bool operator==(const Transition& t) const {
+      return src == t.src;
+    }
   };
 
   class Automaton {
+  private:
+    std::set<struct State> states;
+    std::set<struct Transition> transitions;
+    std::set<char> alphabet;
+
+    bool addState(int state,bool final, bool initial);
+
+    struct State getState(int state){
+
+    }
   public:
     /**
      * Build an empty automaton (no state, no transition).
@@ -231,12 +257,6 @@ namespace fa {
      * Create an equivalent minimal automaton with the Brzozowski algorithm
      */
     static Automaton createMinimalBrzozowski(const Automaton& other);
-
-
-  private:
-    std::vector<struct State> states;
-    std::set<int,struct Transition> transitions;
-    
   };
 
 }
