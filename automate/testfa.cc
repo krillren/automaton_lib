@@ -381,6 +381,14 @@ TEST(addTransition, add_transition_with_same_source_symbol_dest){
   EXPECT_TRUE(fa.addTransition(1,'a', 2));
   EXPECT_FALSE(fa.addTransition(1,'a', 2));
 }
+//test addTransition add transition with same source and dest
+TEST(addTransition, add_transition_with_same_source_dest){
+  fa::Automaton fa;
+  fa.addState(1);
+  fa.addSymbol('a');
+  EXPECT_TRUE(fa.addTransition(1,'a', 1));
+}
+
 /*
   test removeTransition()
 */

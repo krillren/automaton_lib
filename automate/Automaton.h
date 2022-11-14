@@ -27,16 +27,16 @@ namespace fa {
   };
 
   struct Transition{
-    int src;
-    int dest;
-    char symbol;
+    int from;
+    char alpha;
+    int to;
 
     bool operator<(const Transition& t) const {
-      return src < t.src;
+      return from < t.from;
     }
   
     bool operator==(const Transition& t) const {
-      return src == t.src;
+      return from == t.from;
     }
   };
 
@@ -47,16 +47,16 @@ namespace fa {
     std::set<char> alphabet;
 
     bool addState(int state,bool final, bool initial);
-
-    struct State getState(int state){
-
-    }
+    std::size_t countTransitionAlpha(int from, char alpha) const;
+    bool Automaton::hasTransitionAlpha(int from, char alpha) const;
+    
   public:
     /**
      * Build an empty automaton (no state, no transition).
      */
     Automaton();
 
+    Automaton create_copy() const;
     /**
      * Tell if an automaton is valid.
      *
