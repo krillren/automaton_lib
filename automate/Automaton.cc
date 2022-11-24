@@ -11,6 +11,15 @@ namespace fa {
     alphabet = {};
     transitions = {};
   }
+  std::set<struct State> Automaton::getStates() const {
+    return states;
+  }
+  std::set<struct Transition> Automaton::getTransitions() const {
+    return transitions;
+  }
+  std::set<char> Automaton::getAlphabet() const {
+    return alphabet;
+  }
   Automaton Automaton::create_copy() const{
     Automaton a = Automaton();
     for(State s : states){
@@ -42,6 +51,11 @@ namespace fa {
     return false;
   }
   bool Automaton::removeSymbol(char symbol){
+    for(Transition t : transitions){
+      if(t.alpha == symbol){
+        removeTransition(t.from,t.alpha,t.to);
+      }
+    }
     return alphabet.erase(symbol) >0;
   }
   bool Automaton::hasSymbol(char symbol) const{
@@ -191,6 +205,9 @@ namespace fa {
     return count;
   }
   bool Automaton::isDeterministic() const{
+    if(hasEpsilonTransition()){
+      return false;
+    }
     for(State s : states){
       for(char alpha : alphabet){
         if(countTransitionAlpha(s.number,alpha) > 1){
@@ -200,12 +217,166 @@ namespace fa {
     }
     return true;
   }
-  Automaton createComplete(const Automaton& automaton){
-    if(automaton.isComplete()){
-      return automaton.create_copy();
+  int Automaton::add_uniq_state(){
+    int state = 0;
+    while(hasState(state)){
+      state++;
     }
+    addState(state);
+    return state;
+  }
+  int Automaton::add_trash_state(){
+    int trash_state = add_uniq_state();
+    for (char alpha : alphabet){
+      addTransition(trash_state,alpha,trash_state);
+    }
+    return trash_state;
+  }
+  void Automaton::completion(){
     
+    int trash_state = add_trash_state();
+    for(State s : states){
+      for(char alpha : alphabet){
+        if(!hasTransitionAlpha(s.number,alpha)){
+          addTransition(s.number,alpha,trash_state);
+        }
+      }
+    }
+  }
+  Automaton createComplete(const Automaton& automaton){
+    Automaton complete = automaton.create_copy();
+    if(!complete.isComplete()){
+      complete.completion();
+    }
+    return complete;
+  }
+  void Automaton::get_accessible_states(int state, std::set<int>* accessible_state) const{
+    accessible_state->insert(state);
+    for(Transition t : transitions){
+      if(t.from == state){
+        get_accessible_states(t.to,accessible_state);
+      }
+    }
+  }
+  void Automaton::removeNonAccessibleStates(){
+    std::set<int> accessible_states = {};
+    for (State s : states){
+      if(isStateInitial(s.number)){
+        get_accessible_states(s.number, &accessible_states);
+      }
+    }
+    for(State s : states){
+      if(accessible_states.find(s.number) == accessible_states.end()){
+        removeState(s.number);
+      }
+    }
+  }
 
+  void Automaton::get_coaccessible_states(int state, std::set<int>* coaccessible_state) const{
+    coaccessible_state->insert(state);
+    for(Transition t : transitions){
+      if(t.to == state){
+        get_coaccessible_states(t.from,coaccessible_state);
+      }
+    }
+  }
+  void Automaton::removeNonCoAccessibleStates(){
+    std::set<int> coaccessible_states = {};
+    for (State s : states){
+      if(isStateFinal(s.number)){
+        get_coaccessible_states(s.number, &coaccessible_states);
+      }
+    }
+    for(State s : states){
+      if(coaccessible_states.find(s.number) == coaccessible_states.end()){
+        removeState(s.number);
+      }
+    }
+  }
+  bool Automaton::isLanguageEmpty() const{
+    Automaton copy = create_copy();
+    copy.removeNonAccessibleStates();
+    copy.removeNonCoAccessibleStates();
+    return copy.countStates() == 0;
+  }
+
+  void Automaton::removeEpsilonTransitions(){
+    std::set<Transition> epsilon_transitions = {};
+    for(Transition t : transitions){
+      if(t.alpha == Epsilon){
+        epsilon_transitions.insert(t);
+      }
+    }
+    for(Transition t : epsilon_transitions){
+      removeTransition(t.from,t.alpha,t.to);
+    }
+    for(Transition t : epsilon_transitions){
+      for(Transition t2 : transitions){
+        if(t2.from == t.to){
+          addTransition(t.from,t2.alpha,t2.to);
+        }
+      }
+    }
+  }
+  Automaton Automaton::createProduct(const Automaton& lhs, const Automaton& rhs){
+    Automaton product = Automaton();
+    for(char alpha : lhs.getAlphabet()){
+      product.addSymbol(alpha);
+    }
+    for(State s1 : lhs.getStates()){
+      for(State s2 : rhs.getStates()){
+        product.addState(s1.number * rhs.countStates() + s2.number);
+      }
+    }
+    for(State s1 : lhs.getStates()){
+      for(State s2 : rhs.getStates()){
+        for(char alpha : lhs.getAlphabet()){
+          for(Transition t1 : lhs.getTransitions()){
+            for(Transition t2 : rhs.getTransitions()){
+              if(t1.from == s1.number && t2.from == s2.number && t1.alpha == t2.alpha && t1.alpha == alpha){
+                product.addTransition(s1.number * rhs.countStates() + s2.number, alpha, t1.to * rhs.countStates() + t2.to);
+              }
+            }
+          }
+        }
+      }
+    }
+    for(State s1 : lhs.getStates()){
+      for(State s2 : rhs.getStates()){
+        if(lhs.isStateInitial(s1.number) && rhs.isStateInitial(s2.number)){
+          product.setStateInitial(s1.number * rhs.countStates() + s2.number);
+        }
+        if(lhs.isStateFinal(s1.number) && rhs.isStateFinal(s2.number)){
+          product.setStateFinal(s1.number * rhs.countStates() + s2.number);
+        }
+      }
+    }
+    return product;
+  }
+
+
+  bool Automaton::hasEmptyIntersectionWith(const Automaton& other) const{
+    return createProduct(*this,other).isLanguageEmpty();
+  }
+
+  Automaton Automaton::createComplete(const Automaton& automaton){
+    return automaton;
+  }
+  Automaton Automaton::createMirror(const Automaton& automaton){
+    return automaton;
+  }
+  Automaton Automaton::createComplement(const Automaton& automaton){
+    return automaton;
+  }
+  Automaton Automaton::createDeterministic(const Automaton& other){
+    return other;
+  }
+  Automaton Automaton::createMinimalMoore(const Automaton& other){
+    return other;
+  }
+  Automaton Automaton::createMinimalBrzozowski(const Automaton& other){
+    return other;
   }
 }
+
 

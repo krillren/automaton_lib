@@ -48,15 +48,23 @@ namespace fa {
 
     bool addState(int state,bool final, bool initial);
     std::size_t countTransitionAlpha(int from, char alpha) const;
-    bool Automaton::hasTransitionAlpha(int from, char alpha) const;
+    bool hasTransitionAlpha(int from, char alpha) const;
     
   public:
     /**
      * Build an empty automaton (no state, no transition).
      */
     Automaton();
-
+    std::set<struct State> getStates() const;
+    std::set<struct Transition> getTransitions() const;
+    std::set<char> getAlphabet() const;
     Automaton create_copy() const;
+    void completion();
+    int add_trash_state();
+    int add_uniq_state();
+    void get_accessible_states(int state,std::set<int>* accessible_states) const;
+    void get_coaccessible_states(int state,std::set<int>* coaccessible_states) const;
+    void removeEpsilonTransitions();
     /**
      * Tell if an automaton is valid.
      *

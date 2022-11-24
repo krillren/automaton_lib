@@ -483,6 +483,207 @@ TEST(hasTransitions, has_transition_with_inexistent_value){
   EXPECT_FALSE(fa.hasTransition(1,'a',2));
 }
 
+/*
+test countTransition
+*/
+//test countTransition no transitions
+TEST(countTransition, no_transitions){
+  fa::Automaton fa;
+  EXPECT_EQ(fa.countTransitions(), 0ul);
+}
+//test countTransition one transition
+TEST(countTransition, one_transition){
+  fa::Automaton fa;
+  fa.addState(1);
+  fa.addState(2);
+  fa.addSymbol('a');
+  fa.addTransition(1,'a', 2);
+  EXPECT_EQ(fa.countTransitions(), 1ul);
+}
+//test countTransition multiple transitions
+TEST(countTransition, multiple_transition){
+  fa::Automaton fa;
+  fa.addState(1);
+  fa.addState(2);
+  fa.addSymbol('a');
+  fa.addTransition(1,'a', 2);
+  fa.addTransition(2,'a', 2);
+  fa.addTransition(2,'a', 1);
+  EXPECT_EQ(fa.countTransitions(), 3ul);
+}
+/*
+test hasEpsilonTransition()
+*/
+//test hasEpsilonTransition no epsilon transition
+TEST(hasEpsilonTransition, no_epsilon_transition){
+  fa::Automaton fa;
+  EXPECT_FALSE(fa.hasEpsilonTransition());
+}
+//test hasEpsilonTransition one epsilon transition
+TEST(hasEpsilonTransition, one_epsilon_transition){
+  fa::Automaton fa;
+  fa.addState(1);
+  fa.addState(2);
+  fa.addTransition(1, fa::Epsilon, 2);
+  EXPECT_TRUE(fa.hasEpsilonTransition());
+}
+
+//test hasEpsilonTransition multiple epsilon transition
+TEST(hasEpsilonTransition, multiple_epsilon_transition){
+  fa::Automaton fa;
+  fa.addState(1);
+  fa.addState(2);
+  fa.addState(3);
+  fa.addTransition(1, fa::Epsilon, 2);
+  fa.addTransition(2, fa::Epsilon, 3);
+  fa.addTransition(3, fa::Epsilon, 1);
+  EXPECT_TRUE(fa.hasEpsilonTransition());
+}
+
+/*
+test isDeterministic()
+*/
+//test isDeterministic no initial state
+TEST(isDeterministic, no_initial_state){
+  fa::Automaton fa;
+  fa.addState(1);
+  fa.addState(2);
+  fa.addSymbol('a');
+  fa.addTransition(1,'a', 2);
+  EXPECT_FALSE(fa.isDeterministic());
+}
+//test isDeterministic no final state
+TEST(isDeterministic, no_final_state){
+  fa::Automaton fa;
+  fa.addState(1);
+  fa.addState(2);
+  fa.addSymbol('a');
+  fa.addTransition(1,'a', 2);
+  fa.setStateInitial(1);
+  EXPECT_FALSE(fa.isDeterministic());
+}
+//test isDeterministic no transition
+TEST(isDeterministic, no_transition){
+  fa::Automaton fa;
+  fa.addState(1);
+  fa.addState(2);
+  fa.addSymbol('a');
+  fa.setStateInitial(1);
+  fa.setStateFinal(2);
+  EXPECT_TRUE(fa.isDeterministic());
+}
+//test isDeterministic with deterministic transition
+TEST(isDeterministic, one_transition){
+  fa::Automaton fa;
+  fa.addState(1);
+  fa.addState(2);
+  fa.addSymbol('a');
+  fa.addTransition(1,'a', 2);
+  fa.setStateInitial(1);
+  fa.setStateFinal(2);
+  EXPECT_TRUE(fa.isDeterministic());
+}
+//test isDeterministic with nondeterministic transition
+TEST(isDeterministic, multiple_transition){
+  fa::Automaton fa;
+  fa.addState(1);
+  fa.addState(2);
+  fa.addSymbol('a');
+  fa.addTransition(1,'a', 2);
+  fa.addTransition(1,'a', 1);
+  fa.setStateInitial(1);
+  fa.setStateFinal(2);
+  EXPECT_FALSE(fa.isDeterministic());
+}
+/*
+test isComplete()
+*/
+//test isComplete incomplete automaton
+TEST(isComplete, incomplete_automaton){
+  fa::Automaton fa;
+  fa.addState(1);
+  fa.addState(2);
+  fa.addSymbol('a');
+  fa.addSymbol('b');
+  fa.addTransition(1,'a', 2);
+  fa.setStateInitial(1);
+  fa.setStateFinal(2);
+  EXPECT_FALSE(fa.isComplete());
+}
+//test isComplete complete automaton
+TEST(isComplete, complete_automaton){
+  fa::Automaton fa;
+  fa.addState(1);
+  fa.addState(2);
+  fa.addSymbol('a');
+  fa.addSymbol('b');
+  fa.addTransition(1,'a', 2);
+  fa.addTransition(1,'b', 2);
+  fa.setStateInitial(1);
+  fa.setStateFinal(2);
+  EXPECT_TRUE(fa.isComplete());
+}
+/*
+test removeNonAccessibleStates()
+*/
+//test removeNonAccessibleStates non accessible state present
+TEST(removeNonAccessibleStates, non_accessible_state_present){
+  fa::Automaton fa;
+  fa.addState(1);
+  fa.addState(2);
+  fa.addState(3);
+  fa.addSymbol('a');
+  fa.addTransition(1,'a', 2);
+  fa.addTransition(3,'a', 2);
+  fa.setStateInitial(1);
+  fa.setStateFinal(2);
+  fa.removeNonAccessibleStates();
+  EXPECT_EQ(fa.countStates(), 2ul);
+}
+//test removeNonAccessibleStates 0 non accessible state
+TEST(removeNonAccessibleStates, non_accessible_state){
+  fa::Automaton fa;
+  fa.addState(1);
+  fa.addState(2);
+  fa.addSymbol('a');
+  fa.addTransition(1,'a', 2);
+  fa.setStateInitial(1);
+  fa.setStateFinal(2);
+  fa.removeNonAccessibleStates();
+  EXPECT_EQ(fa.countStates(), 2ul);
+}
+/*
+test removeNonCoAccessibleStates()
+*/
+//test removeNonCoAccessibleStates non co accessible state present
+TEST(removeNonCoAccessibleStates, non_co_accessible_state_present){
+  fa::Automaton fa;
+  fa.addState(1);
+  fa.addState(2);
+  fa.addState(3);
+  fa.addSymbol('a');
+  fa.addTransition(1,'a', 2);
+  fa.addTransition(1,'a', 3);
+  fa.setStateInitial(1);
+  fa.setStateFinal(2);
+  fa.removeNonCoAccessibleStates();
+  EXPECT_EQ(fa.countStates(), 2ul);
+}
+//test removeNonCoAccessibleStates 0 non co accessible state
+TEST(removeNonCoAccessibleStates, non_co_accessible_state){
+  fa::Automaton fa;
+  fa.addState(1);
+  fa.addState(2);
+  fa.addSymbol('a');
+  fa.addTransition(1,'a', 2);
+  fa.setStateInitial(1);
+  fa.setStateFinal(2);
+  fa.removeNonCoAccessibleStates();
+  EXPECT_EQ(fa.countStates(), 2ul);
+}
+/*
+test removeEpsilonTransitions()
+*/
 
 
 
