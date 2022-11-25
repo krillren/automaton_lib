@@ -388,6 +388,15 @@ TEST(addTransition, add_transition_with_same_source_dest){
   fa.addSymbol('a');
   EXPECT_TRUE(fa.addTransition(1,'a', 1));
 }
+//test addTransition add  2 transition with same source
+TEST(addTransition, add_transition_with_same_source){
+  fa::Automaton fa;
+  fa.addState(1);
+  fa.addState(2);
+  fa.addSymbol('a');
+  EXPECT_TRUE(fa.addTransition(1,'a', 2));
+  EXPECT_TRUE(fa.addTransition(1,'a', 1));
+}
 
 /*
   test removeTransition()
@@ -517,6 +526,8 @@ test hasEpsilonTransition()
 //test hasEpsilonTransition no epsilon transition
 TEST(hasEpsilonTransition, no_epsilon_transition){
   fa::Automaton fa;
+  fa.addState(1);
+  fa.addSymbol('a');
   EXPECT_FALSE(fa.hasEpsilonTransition());
 }
 //test hasEpsilonTransition one epsilon transition
@@ -524,6 +535,7 @@ TEST(hasEpsilonTransition, one_epsilon_transition){
   fa::Automaton fa;
   fa.addState(1);
   fa.addState(2);
+  fa.addSymbol('a');
   fa.addTransition(1, fa::Epsilon, 2);
   EXPECT_TRUE(fa.hasEpsilonTransition());
 }
@@ -534,6 +546,7 @@ TEST(hasEpsilonTransition, multiple_epsilon_transition){
   fa.addState(1);
   fa.addState(2);
   fa.addState(3);
+  fa.addSymbol('a');
   fa.addTransition(1, fa::Epsilon, 2);
   fa.addTransition(2, fa::Epsilon, 3);
   fa.addTransition(3, fa::Epsilon, 1);
@@ -560,7 +573,7 @@ TEST(isDeterministic, no_final_state){
   fa.addSymbol('a');
   fa.addTransition(1,'a', 2);
   fa.setStateInitial(1);
-  EXPECT_FALSE(fa.isDeterministic());
+  EXPECT_TRUE(fa.isDeterministic());
 }
 //test isDeterministic no transition
 TEST(isDeterministic, no_transition){
@@ -619,6 +632,8 @@ TEST(isComplete, complete_automaton){
   fa.addSymbol('b');
   fa.addTransition(1,'a', 2);
   fa.addTransition(1,'b', 2);
+  fa.addTransition(2,'a', 2);
+  fa.addTransition(2,'b', 2);
   fa.setStateInitial(1);
   fa.setStateFinal(2);
   EXPECT_TRUE(fa.isComplete());

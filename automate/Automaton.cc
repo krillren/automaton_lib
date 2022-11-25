@@ -2,6 +2,7 @@
 #include "ctype.h"
 #include "set"
 #include "iostream"
+#include "assert.h"
 
 
 namespace fa {
@@ -51,11 +52,15 @@ namespace fa {
     return false;
   }
   bool Automaton::removeSymbol(char symbol){
-    for(Transition t : transitions){
-      if(t.alpha == symbol){
-        removeTransition(t.from,t.alpha,t.to);
+    std::set<Transition>::iterator it = transitions.begin();
+    for(;it != transitions.end();){
+      if(it->alpha == symbol){
+        it = transitions.erase(it);
+      }else{
+        it++;
       }
     }
+
     return alphabet.erase(symbol) >0;
   }
   bool Automaton::hasSymbol(char symbol) const{
@@ -170,6 +175,7 @@ namespace fa {
     }
   }
   bool Automaton::hasEpsilonTransition() const{
+    assert(isValid());
     for(Transition t : transitions){
       if(t.alpha == Epsilon){
         return true;
@@ -178,6 +184,7 @@ namespace fa {
     return false;
   }
   bool Automaton::hasTransitionAlpha(int from, char alpha) const{
+    assert(isValid());
     for(Transition t : transitions){
       if(t.from == from && t.alpha == alpha){
         return true;
@@ -186,6 +193,7 @@ namespace fa {
     return false;
   }
   bool Automaton::isComplete() const{
+    assert(isValid());
     for(State s : states){
       for(char alpha : alphabet){
         if(!hasTransitionAlpha(s.number,alpha)){
@@ -205,17 +213,25 @@ namespace fa {
     return count;
   }
   bool Automaton::isDeterministic() const{
+    assert(isValid());
+    bool has_initial = false;
     if(hasEpsilonTransition()){
       return false;
     }
     for(State s : states){
+      if(isStateInitial(s.number)){
+        if(has_initial){
+          return false;
+        }
+        has_initial = true;
+      }
       for(char alpha : alphabet){
         if(countTransitionAlpha(s.number,alpha) > 1){
           return false;
         }
       }
     }
-    return true;
+    return has_initial;
   }
   int Automaton::add_uniq_state(){
     int state = 0;
@@ -259,15 +275,18 @@ namespace fa {
     }
   }
   void Automaton::removeNonAccessibleStates(){
+    assert(isValid());
     std::set<int> accessible_states = {};
     for (State s : states){
       if(isStateInitial(s.number)){
         get_accessible_states(s.number, &accessible_states);
       }
     }
-    for(State s : states){
-      if(accessible_states.find(s.number) == accessible_states.end()){
-        removeState(s.number);
+    
+    std::set<State>::iterator iter = states.begin();
+    for(;iter != states.end();iter++){
+      if(accessible_states.find(iter->number) == accessible_states.end()){
+        iter = states.erase(iter);
       }
     }
   }
@@ -281,19 +300,22 @@ namespace fa {
     }
   }
   void Automaton::removeNonCoAccessibleStates(){
+    assert(isValid());
     std::set<int> coaccessible_states = {};
     for (State s : states){
       if(isStateFinal(s.number)){
         get_coaccessible_states(s.number, &coaccessible_states);
       }
     }
-    for(State s : states){
-      if(coaccessible_states.find(s.number) == coaccessible_states.end()){
-        removeState(s.number);
+    std::set<State>::iterator iter = states.begin();
+    for(;iter != states.end();iter++){
+      if(coaccessible_states.find(iter->number) == coaccessible_states.end()){
+        iter = states.erase(iter);
       }
     }
   }
   bool Automaton::isLanguageEmpty() const{
+    assert(isValid());
     Automaton copy = create_copy();
     copy.removeNonAccessibleStates();
     copy.removeNonCoAccessibleStates();
@@ -319,6 +341,8 @@ namespace fa {
     }
   }
   Automaton Automaton::createProduct(const Automaton& lhs, const Automaton& rhs){
+    assert(lhs.isValid());
+    assert(rhs.isValid());
     Automaton product = Automaton();
     for(char alpha : lhs.getAlphabet()){
       product.addSymbol(alpha);
@@ -356,25 +380,33 @@ namespace fa {
 
 
   bool Automaton::hasEmptyIntersectionWith(const Automaton& other) const{
+    assert(isValid());
+    assert(other.isValid());
     return createProduct(*this,other).isLanguageEmpty();
   }
 
   Automaton Automaton::createComplete(const Automaton& automaton){
+    assert(automaton.isValid());
     return automaton;
   }
   Automaton Automaton::createMirror(const Automaton& automaton){
+    assert(automaton.isValid());
     return automaton;
   }
   Automaton Automaton::createComplement(const Automaton& automaton){
+    assert(automaton.isValid());
     return automaton;
   }
   Automaton Automaton::createDeterministic(const Automaton& other){
+    assert(other.isValid());
     return other;
   }
   Automaton Automaton::createMinimalMoore(const Automaton& other){
+    assert(other.isValid());
     return other;
   }
   Automaton Automaton::createMinimalBrzozowski(const Automaton& other){
+    assert(other.isValid());
     return other;
   }
 }

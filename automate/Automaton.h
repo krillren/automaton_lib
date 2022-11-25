@@ -30,13 +30,13 @@ namespace fa {
     int from;
     char alpha;
     int to;
-
+    long long uniq_index = from * 1000000 + alpha * 1000 + to;
     bool operator<(const Transition& t) const {
-      return from < t.from;
+      return uniq_index < t.uniq_index;
     }
   
     bool operator==(const Transition& t) const {
-      return from == t.from;
+      return uniq_index == t.uniq_index;
     }
   };
 
