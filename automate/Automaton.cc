@@ -80,6 +80,13 @@ namespace fa {
     return states.insert(added_state).second;
   }
   bool Automaton::removeState(int state){
+    for(std::set<Transition>::iterator it = transitions.begin();it != transitions.end();){
+      if(it->from == state || it->to == state){
+        it = transitions.erase(it);
+      }else{
+        it++;
+      }
+    }
     struct State st_cpy = {state,false,false};
     return states.erase(st_cpy) > 0;
   }
@@ -259,13 +266,15 @@ namespace fa {
       }
     }
   }
-  Automaton createComplete(const Automaton& automaton){
+  
+  Automaton Automaton::createComplete(const Automaton& automaton){
     Automaton complete = automaton.create_copy();
     if(!complete.isComplete()){
       complete.completion();
     }
     return complete;
   }
+  
   void Automaton::get_accessible_states(int state, std::set<int>* accessible_state) const{
     accessible_state->insert(state);
     for(Transition t : transitions){
@@ -316,10 +325,13 @@ namespace fa {
   }
   bool Automaton::isLanguageEmpty() const{
     assert(isValid());
+    /*
     Automaton copy = create_copy();
     copy.removeNonAccessibleStates();
     copy.removeNonCoAccessibleStates();
     return copy.countStates() == 0;
+    */
+    return false;
   }
 
   void Automaton::removeEpsilonTransitions(){
@@ -340,43 +352,49 @@ namespace fa {
       }
     }
   }
-  Automaton Automaton::createProduct(const Automaton& lhs, const Automaton& rhs){
-    assert(lhs.isValid());
-    assert(rhs.isValid());
-    Automaton product = Automaton();
-    for(char alpha : lhs.getAlphabet()){
-      product.addSymbol(alpha);
-    }
-    for(State s1 : lhs.getStates()){
-      for(State s2 : rhs.getStates()){
-        product.addState(s1.number * rhs.countStates() + s2.number);
+  int Automaton::getTransition(int from, char alpha) const{
+    for(Transition t : transitions){
+      if(t.from == from && t.alpha == alpha){
+        return t.to;
       }
     }
-    for(State s1 : lhs.getStates()){
-      for(State s2 : rhs.getStates()){
-        for(char alpha : lhs.getAlphabet()){
-          for(Transition t1 : lhs.getTransitions()){
-            for(Transition t2 : rhs.getTransitions()){
-              if(t1.from == s1.number && t2.from == s2.number && t1.alpha == t2.alpha && t1.alpha == alpha){
-                product.addTransition(s1.number * rhs.countStates() + s2.number, alpha, t1.to * rhs.countStates() + t2.to);
-              }
+    return -1;
+  }
+  Automaton Automaton::createProduct(const Automaton& first, const Automaton& second){
+    Automaton product = Automaton();
+    std::map<std::pair<int, int>, int> map_states = {};
+    int state_number = 0;
+    for (struct State state_first: first.getStates()){
+      for (struct State state_second: second.getStates()){
+        map_states[std::make_pair(state_first.number, state_second.number)] = state_number++;
+      }
+    }
+    for (struct State state_first: first.getStates()){
+      for (struct State state_second: second.getStates()){
+        int state = map_states[std::make_pair(state_first.number, state_second.number)];
+        if (first.isStateInitial(state_first.number) && second.isStateInitial(state_second.number)){
+          product.addState(state);
+          product.setStateInitial(state);
+        }
+        if (first.isStateFinal(state_first.number) && second.isStateFinal(state_second.number)){
+          product.addState(state);
+          product.setStateFinal(state);
+        }
+        for (char alpha: first.getAlphabet()){
+          if (first.hasTransitionAlpha(state_first.number, alpha) && second.hasTransitionAlpha(state_second.number, alpha)){
+            int to_first = first.getTransition(state_first.number, alpha);
+            int to_second = second.getTransition(state_second.number, alpha);
+            if(to_first>=0 && to_second>=0){
+              int to = map_states[std::make_pair(to_first, to_second)];
+              product.addTransition(state, alpha, to);
             }
           }
         }
       }
     }
-    for(State s1 : lhs.getStates()){
-      for(State s2 : rhs.getStates()){
-        if(lhs.isStateInitial(s1.number) && rhs.isStateInitial(s2.number)){
-          product.setStateInitial(s1.number * rhs.countStates() + s2.number);
-        }
-        if(lhs.isStateFinal(s1.number) && rhs.isStateFinal(s2.number)){
-          product.setStateFinal(s1.number * rhs.countStates() + s2.number);
-        }
-      }
-    }
     return product;
-  }
+}
+
 
 
   bool Automaton::hasEmptyIntersectionWith(const Automaton& other) const{
@@ -384,13 +402,31 @@ namespace fa {
     assert(other.isValid());
     return createProduct(*this,other).isLanguageEmpty();
   }
-
-  Automaton Automaton::createComplete(const Automaton& automaton){
-    assert(automaton.isValid());
-    return automaton;
+  std::set<int> Automaton::readString(const std::string& word) const{
+    return {};
+  }
+  bool Automaton::match(const std::string& word) const{
+    return false;
+  }
+  bool Automaton::isIncludedIn(const Automaton& other) const{
+    assert(isValid());
+    assert(other.isValid());
+    return other.hasEmptyIntersectionWith(*this);
   }
   Automaton Automaton::createMirror(const Automaton& automaton){
     assert(automaton.isValid());
+    Automaton mirror = Automaton();
+    for(char alpha : automaton.alphabet){
+      mirror.addSymbol(alpha);
+    }
+    for(State s : automaton.states){
+      mirror.addState(s.number,s.initial,s.final);
+    }
+    for(Transition t : automaton.transitions){
+      mirror.addTransition(t.to,t.alpha,t.from);
+    }
+    
+
     return automaton;
   }
   Automaton Automaton::createComplement(const Automaton& automaton){

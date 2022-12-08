@@ -46,9 +46,9 @@ namespace fa {
     std::set<struct Transition> transitions;
     std::set<char> alphabet;
 
-    bool addState(int state,bool final, bool initial);
+    
     std::size_t countTransitionAlpha(int from, char alpha) const;
-    bool hasTransitionAlpha(int from, char alpha) const;
+   
     
   public:
     /**
@@ -59,6 +59,9 @@ namespace fa {
     std::set<struct Transition> getTransitions() const;
     std::set<char> getAlphabet() const;
     Automaton create_copy() const;
+    bool hasTransitionAlpha(int from, char alpha) const;
+    int getTransition(int from, char alpha) const;
+    bool addState(int state,bool final, bool initial);
     void completion();
     int add_trash_state();
     int add_uniq_state();
