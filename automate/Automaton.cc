@@ -3,6 +3,7 @@
 #include "set"
 #include "iostream"
 #include "assert.h"
+#include "queue"
 
 
 namespace fa {
@@ -40,7 +41,14 @@ namespace fa {
     }
     return a;
   }
-  
+  void Automaton::validation(){
+    if(states.empty()){
+      addState(0);
+    }
+    if(alphabet.empty()){
+      addSymbol('a');
+    }
+  }
   bool Automaton::isValid() const {
     return !states.empty() && !alphabet.empty();
   }
@@ -60,7 +68,6 @@ namespace fa {
         it++;
       }
     }
-
     return alphabet.erase(symbol) >0;
   }
   bool Automaton::hasSymbol(char symbol) const{
@@ -272,13 +279,14 @@ namespace fa {
     if(!complete.isComplete()){
       complete.completion();
     }
+    complete.validation();
     return complete;
   }
   
   void Automaton::get_accessible_states(int state, std::set<int>* accessible_state) const{
     accessible_state->insert(state);
     for(Transition t : transitions){
-      if(t.from == state){
+      if(t.from == state && accessible_state->find(t.to) == accessible_state->end()){
         get_accessible_states(t.to,accessible_state);
       }
     }
@@ -293,17 +301,24 @@ namespace fa {
     }
     
     std::set<State>::iterator iter = states.begin();
-    for(;iter != states.end();iter++){
+    for(;iter != states.end();){
       if(accessible_states.find(iter->number) == accessible_states.end()){
-        iter = states.erase(iter);
+        int state = iter->number;
+        iter++;
+        removeState(state);
+      }else{
+        iter++;
       }
+    }
+    if(states.empty()){
+      addState(0,false,true);
     }
   }
 
   void Automaton::get_coaccessible_states(int state, std::set<int>* coaccessible_state) const{
     coaccessible_state->insert(state);
     for(Transition t : transitions){
-      if(t.to == state){
+      if(t.to == state && coaccessible_state->find(t.from) == coaccessible_state->end()){
         get_coaccessible_states(t.from,coaccessible_state);
       }
     }
@@ -316,22 +331,38 @@ namespace fa {
         get_coaccessible_states(s.number, &coaccessible_states);
       }
     }
+    
     std::set<State>::iterator iter = states.begin();
-    for(;iter != states.end();iter++){
+    for(;iter != states.end();){
       if(coaccessible_states.find(iter->number) == coaccessible_states.end()){
-        iter = states.erase(iter);
+        int state = iter->number;
+        iter++;
+        removeState(state);
+      }else{
+        iter++;
       }
     }
+    if(states.empty()){
+      addState(0,true,false);
+    }
+    
   }
+  
+    
   bool Automaton::isLanguageEmpty() const{
     assert(isValid());
-    /*
-    Automaton copy = create_copy();
-    copy.removeNonAccessibleStates();
-    copy.removeNonCoAccessibleStates();
-    return copy.countStates() == 0;
-    */
-    return false;
+    for(State s : states){
+      if(isStateInitial(s.number)){
+        std::set<int> visited = {};
+        get_accessible_states(s.number,&visited);
+        for(State s2 : states){
+          if(isStateFinal(s2.number) && visited.find(s2.number) != visited.end()){
+            return false;
+          }
+        }
+      }
+    }
+    return true;
   }
 
   void Automaton::removeEpsilonTransitions(){
@@ -366,18 +397,25 @@ namespace fa {
     int state_number = 0;
     for (struct State state_first: first.getStates()){
       for (struct State state_second: second.getStates()){
-        map_states[std::make_pair(state_first.number, state_second.number)] = state_number++;
+        product.addState(state_number);
+        map_states[std::make_pair(state_first.number, state_second.number)] = state_number;
+        state_number++;
       }
     }
+    for(char alpha: first.getAlphabet()){
+      product.addSymbol(alpha);
+    }
+    for(char alpha: second.getAlphabet()){
+      product.addSymbol(alpha);
+    }
+
     for (struct State state_first: first.getStates()){
       for (struct State state_second: second.getStates()){
         int state = map_states[std::make_pair(state_first.number, state_second.number)];
         if (first.isStateInitial(state_first.number) && second.isStateInitial(state_second.number)){
-          product.addState(state);
           product.setStateInitial(state);
         }
         if (first.isStateFinal(state_first.number) && second.isStateFinal(state_second.number)){
-          product.addState(state);
           product.setStateFinal(state);
         }
         for (char alpha: first.getAlphabet()){
@@ -385,13 +423,16 @@ namespace fa {
             int to_first = first.getTransition(state_first.number, alpha);
             int to_second = second.getTransition(state_second.number, alpha);
             if(to_first>=0 && to_second>=0){
-              int to = map_states[std::make_pair(to_first, to_second)];
-              product.addTransition(state, alpha, to);
+              if(map_states.find(std::make_pair(to_first, to_second)) != map_states.end()){
+                int to = map_states.find(std::make_pair(to_first, to_second))->second;
+                product.addTransition(state, alpha, to);
+              }
             }
           }
         }
       }
     }
+    product.validation();
     return product;
 }
 
@@ -402,16 +443,55 @@ namespace fa {
     assert(other.isValid());
     return createProduct(*this,other).isLanguageEmpty();
   }
+  
+  std::set<int> Automaton::readChar(const std::set<int>& states_from, char c) const{
+    std::set<int> states_passed = {};
+    for(int state : states_from){
+      for(Transition t : transitions){
+        if(t.from == state && t.alpha == c){
+          states_passed.insert(t.to);
+        }
+      }
+    }
+    return states_passed;
+  }
   std::set<int> Automaton::readString(const std::string& word) const{
-    return {};
+    assert(isValid());
+    std::set<int> states_passed = {};
+    for(State s : states){
+      if(isStateInitial(s.number)){
+        states_passed.insert(s.number);
+      }
+    }
+    for(char c : word){
+      states_passed = readChar(states_passed, c);
+    }
+    return states_passed;
   }
   bool Automaton::match(const std::string& word) const{
+    assert(isValid());
+    std::set<int> states_passed = readString(word);
+    for(int state : states_passed){
+      if(isStateFinal(state)){
+        return true;
+      }
+    }
+    
     return false;
   }
   bool Automaton::isIncludedIn(const Automaton& other) const{
     assert(isValid());
     assert(other.isValid());
-    return other.hasEmptyIntersectionWith(*this);
+    Automaton copy = create_copy();
+    Automaton copy_other = other.create_copy();
+    for(char c : copy.getAlphabet()){
+      copy_other.addSymbol(c);
+    }
+    for(char c : other.getAlphabet()){
+      copy.addSymbol(c);
+    }
+    Automaton complement = createComplement(copy);
+    return complement.hasEmptyIntersectionWith(copy_other);
   }
   Automaton Automaton::createMirror(const Automaton& automaton){
     assert(automaton.isValid());
@@ -420,7 +500,7 @@ namespace fa {
       mirror.addSymbol(alpha);
     }
     for(State s : automaton.states){
-      mirror.addState(s.number,s.initial,s.final);
+      mirror.addState(s.number,!s.final,!s.initial);
     }
     for(Transition t : automaton.transitions){
       mirror.addTransition(t.to,t.alpha,t.from);
@@ -431,12 +511,69 @@ namespace fa {
   }
   Automaton Automaton::createComplement(const Automaton& automaton){
     assert(automaton.isValid());
-    return automaton;
+    Automaton complement = createComplete(automaton);
+    complement  = createDeterministic(automaton);
+    for(State s : complement.getStates()){
+      s.final = !s.final;
+    }
+    return complement;
+  }
+  struct deterministic_struct{
+    mutable std::map<std::set<int>, int> determinise_states;
+    mutable int state_number = 0;
+    mutable Automaton deterministic;
+    void add_state(std::set<int> states){
+      determinise_states[states] = state_number;
+      deterministic.addState(state_number);
+      for(int state : states){
+        if(deterministic.isStateFinal(state)){
+          deterministic.setStateFinal(state_number);
+        }
+      }
+      state_number++;
+    }
+    bool has_state(std::set<int> states){
+      return determinise_states.find(states) != determinise_states.end();
+    }
+    Automaton produce_automaton(Automaton& other){
+      deterministic.setStateInitial(0);
+      return deterministic;
+    }
+  };
+  void determinise_state(const Automaton& other, std::set<int> states, struct deterministic_struct& d_struct){
+    for(char c : other.getAlphabet()){
+      std::set<int> states_passed = other.readChar(states, c);
+      if(!d_struct.has_state(states_passed)){
+        d_struct.add_state(states_passed);
+        determinise_state(other, states_passed, d_struct);
+      }
+    }
   }
   Automaton Automaton::createDeterministic(const Automaton& other){
     assert(other.isValid());
-    return other;
+
+    
+    
+    deterministic_struct d_struct = deterministic_struct();
+    d_struct.deterministic = Automaton();
+    d_struct.determinise_states = {};
+    for(char alpha : other.getAlphabet()){
+      d_struct.deterministic.addSymbol(alpha);
+    }
+
+
+    std::set<int> states_to_process = {};
+    for(struct State s : other.getStates()){
+      if(s.initial){
+        states_to_process.insert(s.number);
+      }
+    }
+    determinise_state(other, states_to_process, d_struct);
+    
+    d_struct.deterministic.validation();
+    return d_struct.deterministic;
   }
+
   Automaton Automaton::createMinimalMoore(const Automaton& other){
     assert(other.isValid());
     return other;

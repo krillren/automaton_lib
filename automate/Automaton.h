@@ -59,6 +59,7 @@ namespace fa {
     std::set<struct Transition> getTransitions() const;
     std::set<char> getAlphabet() const;
     Automaton create_copy() const;
+    void validation();
     bool hasTransitionAlpha(int from, char alpha) const;
     int getTransition(int from, char alpha) const;
     bool addState(int state,bool final, bool initial);
@@ -68,6 +69,8 @@ namespace fa {
     void get_accessible_states(int state,std::set<int>* accessible_states) const;
     void get_coaccessible_states(int state,std::set<int>* coaccessible_states) const;
     void removeEpsilonTransitions();
+    void get_states_from_word(int inial_state,std::string word, std::set<int>* states) const;
+    std::set<int> readChar(const std::set<int>& states_from, char c) const;
     /**
      * Tell if an automaton is valid.
      *
